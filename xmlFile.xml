@@ -95,7 +95,7 @@
           <Tag xsi:type="TArg" arg="mA" />
         </TCont>
         <TCont Name="KX" Type="A" Package="DENSE" StorageLen="2" Data="4B58">
-          <Tag xsi:type="TArg" arg="CmdCode" />
+          <Tag xsi:type="TArg" arg="CmdCode" 
         </TCont>
         <TCont Name="ErrCode" Type="A" Package="DENSE" StorageLen="2" Data="3030">
           <Tag xsi:type="TArg" arg="ErrCode" />

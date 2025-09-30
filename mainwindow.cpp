@@ -80,33 +80,41 @@ void MainWindow::parseElements(QXmlStreamReader &xml, QString &command)
 
 QString MainWindow::formatData(QString &command, const QString &type, const QString &len)
 {
-    int length = len.toInt() * 2;
-    QString realData = "";
+    int hexLength = len.toInt() * 2; // Длина в hex символах (байты * 2)
+    QString hexData = command.left(hexLength); // Берем hex-данные
 
-    if (type == "B")
-    {
-        realData = command.left(length);
-        command = command.mid(length);
-    }
-    else if (type == "A" || type == "H" || type == "N")
-    {
-        for (int i = 0; i < length; i += 2)
+    // УДАЛЯЕМ обработанные данные из исходной команды
+    command = command.mid(hexLength);
+
+    QString realData;
+
+    if (type == "A" || type == "H") {
+        for (int i = 0; i < hexData.length(); i += 2)
         {
-            QString byte = command.mid(2);
+            QString byte = hexData.mid(i, 2);
             bool ok;
-            realData.append(char(byte.toUInt()));
-            command = command.mid(2);
+            char ch = static_cast<char>(byte.toUShort(&ok, 16));
+            if (ok) realData.append(ch);
         }
     }
-//    else if (type == "N")
-//    {
-//        QString asciiStr = command.left(length);
-//        for (auto ch : asciiStr)
-//        {
-//            realData.append(QString::number(ch.unicode()));
-//        }
-//        command.mid(length);
-//    }
+    else if (type == "N") {
+
+        for (int i = 0; i < hexData.length(); i += 2) {
+            QString byte = hexData.mid(i, 2);
+            bool ok;
+            char ch = static_cast<char>(byte.toUShort(&ok, 16));
+            if (ok) {
+                realData.append(ch);
+            }
+        }
+    }
+    else if (type == "B") {
+        // Bytes - форматируем hex с пробелами
+        for (int i = 0; i < hexData.length(); i += 2) {
+            if (!realData.isEmpty()) realData.append(" ");
+            realData.append(hexData.mid(i, 2));
+        }
+    }
 
     return realData;
 }
