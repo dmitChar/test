@@ -6,6 +6,7 @@ MainWindow::MainWindow(QWidget *parent)
     parseFromFile(":/xmlFile.xml");
 }
 
+// Чтение файла и старт парсинга
 void MainWindow::parseFromFile(const QString &fileName)
 {
     QFile file(fileName);
@@ -21,6 +22,7 @@ void MainWindow::parseFromFile(const QString &fileName)
     file.close();
 }
 
+//обработка <TContextCMD>
 void MainWindow::printCommands(QXmlStreamReader &xml)
 {
     int commandCount = 0;
@@ -48,31 +50,35 @@ void MainWindow::printCommands(QXmlStreamReader &xml)
     }
 }
 
+//парсинг вложенных элементов внутри <TContextCMD>
 void MainWindow::parseElements(QXmlStreamReader &xml, QString &command)
 {
-    while (!xml.atEnd() && !xml.hasError()) {
+    while (!xml.atEnd())
+    {
         QXmlStreamReader::TokenType token = xml.readNext();
 
-        if (token == QXmlStreamReader::StartElement) {
-            if (xml.name() == QString("TCont")) {
+        if (token == QXmlStreamReader::StartElement)
+        {
+            if (xml.name() == QString("TCont"))
+            {
                 QString name = xml.attributes().value("Name").toString();
                 QString type = xml.attributes().value("Type").toString();
-                bool ok = false;
-                int storageLen = xml.attributes().value("StorageLen").toInt(&ok);
-                if (!ok) storageLen = 0;
+                int len = xml.attributes().value("StorageLen").toInt();
 
-                QString realData = formatData(command, type, storageLen);
-                qDebug().noquote() << name + ":" << realData;
+                QString realData = formatData(command, type, len);
+
+                qDebug().noquote() << name << ":" << realData;
             }
-        } else if (token == QXmlStreamReader::EndElement) {
-            if (xml.name() == QString("TContextCMD")) {
-                // закончили блок команды — возвращаемся в printCommands
+        }
+        else if (token == QXmlStreamReader::EndElement)
+        {
+            if (xml.name() == QString("TContextCMD"))
                 return;
-            }
         }
     }
 }
 
+//преобразование данных
 QString MainWindow::formatData(QString &command, const QString &type,  int len)
 {
     int hexLength = len * 2;
@@ -92,19 +98,8 @@ QString MainWindow::formatData(QString &command, const QString &type,  int len)
 
     else if (type == "N")
     {
-        QString asAscii = QString::fromLatin1(bytes);
-        bool allDigits = !asAscii.isEmpty();
+        return QString::fromLatin1(bytes);
 
-        for (auto c : asAscii)
-        {
-            if (!c.isDigit())
-            {
-                allDigits = false;
-                break;
-            }
-        }
-        if (allDigits) return asAscii;
-        else return hexData;
     }
     return hexData;
 

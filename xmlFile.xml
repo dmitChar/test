@@ -2,8 +2,7 @@
 <Traffics xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <cmds_list>
     <TContextCMD Name="BA" Type="B" Package="DENSE" StorageLen="0" Data="31323334424131323334353637383930313246333234333835343438373033">
-      <LastPos>
-</LastPos>
+      <LastPos>31</LastPos>
       <NeedAnswerForce>false</NeedAnswerForce>
       <Args>
         <TCont Name="MsgHdr" Type="A" Package="DENSE" StorageLen="4" Data="31323334">
@@ -95,7 +94,7 @@
           <Tag xsi:type="TArg" arg="mA" />
         </TCont>
         <TCont Name="KX" Type="A" Package="DENSE" StorageLen="2" Data="4B58">
-          <Tag xsi:type="TArg" arg="CmdCode" 
+          <Tag xsi:type="TArg" arg="CmdCode" />
         </TCont>
         <TCont Name="ErrCode" Type="A" Package="DENSE" StorageLen="2" Data="3030">
           <Tag xsi:type="TArg" arg="ErrCode" />
