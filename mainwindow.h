@@ -18,9 +18,9 @@ public:
 
     ~MainWindow();
 private:
-    void printCommands(QString xmlData);
+    void printCommands(QXmlStreamReader &xml);
     void parseElements(QXmlStreamReader &xml, QString &command);
-    QString formatData(QString &command, const QString &type, const QString &len);
+    QString formatData(QString &command, const QString &type, int len);
 
 };
 #endif // MAINWINDOW_H

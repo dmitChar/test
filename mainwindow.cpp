@@ -15,108 +15,99 @@ void MainWindow::parseFromFile(const QString &fileName)
         qDebug() << "Невозможно открыть файл" << fileName;
         return;
     }
-    QString xmlData = file.readAll();
-    file.close();
-    printCommands(xmlData);
 
+    QXmlStreamReader xml(&file);
+    printCommands(xml);
+    file.close();
 }
 
-void MainWindow::printCommands(QString xmlData)
+void MainWindow::printCommands(QXmlStreamReader &xml)
 {
-    QXmlStreamReader xml(xmlData);
-    bool request = true;
     int commandCount = 0;
 
-    while(!xml.atEnd() && !xml.hasError())
+    while(!xml.atEnd())
     {
         QXmlStreamReader::TokenType token = xml.readNext();
         if (token == QXmlStreamReader::StartDocument)
             continue;
 
-        if (token == QXmlStreamReader::StartElement)
+        if (token == QXmlStreamReader::StartElement && xml.name() == QString("TContextCMD"))
         {
-            if (xml.name() == QString("TContextCMD"))
-            {
-                if (commandCount % 2 == 0)
-                    qDebug() << "Request: ";
-                else qDebug() << "Response: ";
+            if (commandCount % 2 == 0)
+                qDebug() << "Request: ";
+            else qDebug() << "Response: ";
 
-                QString command = xml.attributes().value("Data").toString();
-                qDebug() << "Command:" << command;
+            QString command = xml.attributes().value("Data").toString();
+            qDebug() << "Command:" << command;
 
-                parseElements(xml, command);
-                commandCount++;
-                qDebug() << "\n";
-            }
+            parseElements(xml, command);
+            commandCount++;
+            qDebug() << "\n";
+
         }
     }
 }
 
 void MainWindow::parseElements(QXmlStreamReader &xml, QString &command)
 {
-    while (!xml.atEnd() && !xml.hasError())
-    {
+    while (!xml.atEnd() && !xml.hasError()) {
         QXmlStreamReader::TokenType token = xml.readNext();
-        if (token == QXmlStreamReader::StartElement)
-        {
-            if (xml.name() == QString("TCont"))
-            {
+
+        if (token == QXmlStreamReader::StartElement) {
+            if (xml.name() == QString("TCont")) {
                 QString name = xml.attributes().value("Name").toString();
                 QString type = xml.attributes().value("Type").toString();
-                QString len = xml.attributes().value("StorageLen").toString();
+                bool ok = false;
+                int storageLen = xml.attributes().value("StorageLen").toInt(&ok);
+                if (!ok) storageLen = 0;
 
-                QString realData = formatData(command, type, len);
-
-                qDebug() << name << ":" << realData;
+                QString realData = formatData(command, type, storageLen);
+                qDebug().noquote() << name + ":" << realData;
             }
-        }
-        else if (token == QXmlStreamReader::EndElement)
-        {
-            if (xml.name() == QString("TContextCMD"))
+        } else if (token == QXmlStreamReader::EndElement) {
+            if (xml.name() == QString("TContextCMD")) {
+                // закончили блок команды — возвращаемся в printCommands
                 return;
+            }
         }
     }
 }
 
-QString MainWindow::formatData(QString &command, const QString &type, const QString &len)
+QString MainWindow::formatData(QString &command, const QString &type,  int len)
 {
-    int hexLength = len.toInt() * 2; // Длина в hex символах (байты * 2)
-    QString hexData = command.left(hexLength); // Берем hex-данные
-
-    // УДАЛЯЕМ обработанные данные из исходной команды
+    int hexLength = len * 2;
+    QString hexData = command.left(hexLength);
     command = command.mid(hexLength);
 
-    QString realData;
+    QByteArray bytes = QByteArray::fromHex(hexData.toUtf8());
 
-    if (type == "A" || type == "H") {
-        for (int i = 0; i < hexData.length(); i += 2)
+    if (type == "A")
+        return QString::fromLatin1(bytes);
+
+    else if (type == "H")
+        return QString::fromLatin1(bytes);
+
+    else if (type == "B")
+        return hexData;
+
+    else if (type == "N")
+    {
+        QString asAscii = QString::fromLatin1(bytes);
+        bool allDigits = !asAscii.isEmpty();
+
+        for (auto c : asAscii)
         {
-            QString byte = hexData.mid(i, 2);
-            bool ok;
-            char ch = static_cast<char>(byte.toUShort(&ok, 16));
-            if (ok) realData.append(ch);
-        }
-    }
-    else if (type == "N") {
-
-        for (int i = 0; i < hexData.length(); i += 2) {
-            QString byte = hexData.mid(i, 2);
-            bool ok;
-            char ch = static_cast<char>(byte.toUShort(&ok, 16));
-            if (ok) {
-                realData.append(ch);
+            if (!c.isDigit())
+            {
+                allDigits = false;
+                break;
             }
         }
+        if (allDigits) return asAscii;
+        else return hexData;
     }
-    else if (type == "B") {
-        // Bytes - форматируем hex с пробелами
-        for (int i = 0; i < hexData.length(); i += 2) {
-            if (!realData.isEmpty()) realData.append(" ");
-            realData.append(hexData.mid(i, 2));
-        }
-    }
+    return hexData;
 
-    return realData;
 }
 
 MainWindow::~MainWindow()
